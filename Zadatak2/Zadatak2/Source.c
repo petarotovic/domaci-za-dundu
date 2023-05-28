@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+//Zamisli linked listu kao neku kocku. U toj kocki imas neke podatke sto su u nasem slucaju ime, index, poeni
+//i zadnji podatak je next. Next pokazuje na sledecu kocku ili linked listu. Preko next joj i pristupamo.
+
 typedef struct {
     char ime[30];
     char index[8];
@@ -21,14 +24,22 @@ void FreeLinkedList(Node* head) {
     }
 }
 
+//Ova funkcija prima listu, sto ce kod nas da bude ona sredjena lista i upisace je u fajl.
 void WriteList(Node* list)
 {
     FILE* file;
+
+    //Ovo ce da bude prva kocka u listi
     Node* current;
 
     file = fopen("rezultati.txt", "w");
 
+    //Ovde postavljam current na da bude prva kocka u listi.
+    //Zadnja kocka u listi za next ima NULL
     current = list;
+
+    //Posto zadnja kocka u listi ima vrednost NULL mi radimo nesto sve dok nije NULL
+    //Mislim da ovde ne treba nesto posebno da objasnjavam, obican upis u fajl, liniju po liniju
     while (current != NULL) {
         fprintf(file, "%s ( %s ) - %d\n", current->ime, current->index, current->poeni);
         current = current->next;
@@ -42,26 +53,41 @@ void SortLinkedListByIndex(Node** head) {
     Node* last = NULL;
     Node* temp = NULL;
 
+
+    //Ako je prazna lista, onda samo izbacuje ne ide dalje
     if (*head == NULL)
         return;
     if ((*head)->next == NULL)
         return;
 
     do {
+        //Ovo ce da bude indikator da li je u trenutnoj iteraciji izvrsena zamena mesta kockama
         swapped = 0;
+
+        //Postavljamo trenutnu kocku na prvu u listi
         current = *head;
 
+        //Posto svaka kocka sadrzi pokazivac na sledecu, proveravamo da li pokazivac koji se nalazi u trenutnoj kocki
+        //pokazuje na zadnju
         while (current->next != last) {
+            //Stavljam u temp sledecu kocku
             temp = current->next;
+
+            //Uporedjujem indekse od trenutne kocke i one posle nje koja je smestena u temp
             if (strcmp(current->index, temp->index) > 0) {
+                //Ako je potrebno da se zamene uzimamo pokazivac na sledecu kocku iz current i stavljamo u temp
                 Node* temp = current->next;
+                //Pokazivac u trenutnu kocku postavljamo na pokazivac od sledece kocke tj. one iz temp
                 current->next = temp->next;
+                //A pokazivac u temp postavljamo na current i ovako smo zamenili pokazivace na dve kocke tj rotirale su mesta
                 temp->next = current;
 
+                //ako je doslo do zamene mesta, sada se nova kocka nalazi na pocetku liste i head postavljamo da bude ta nova kocka
                 if (current == *head) {
                     *head = temp;
                 }
                 else {
+                    //u slucaju da 
                     Node* prev = *head;
                     while (prev->next != current) {
                         prev = prev->next;
@@ -69,59 +95,19 @@ void SortLinkedListByIndex(Node** head) {
                     prev->next = temp;
                 }
 
+                //Postavljamo current ili trenutnu kocku da bude nova kocka koja je na pocetku
                 current = temp;
+                //swapped postavljamo na 1 i to oznacava da je do zamene doslo
                 swapped = 1;
             }
 
+            //Postavljamo trenutnu kocku na sledecu u nizu
             current = current->next;
         }
 
+        //Postavljamo zadnju kocku koja je pomerena
         last = current;
     } while (swapped);
-}
-
-void SetValues(Node** node, char* line) {
-    char ime[31] = "";
-    int currentIndex = 0;
-
-    for (int i = 0; i < strlen(line); i++) {
-        if (line[i] == ' ' && line[i + 1] == '|') {
-            currentIndex = i + 3;
-            break;
-        }
-
-        char temp[2] = { line[i], '\0' };
-        strcat(ime, temp);
-    }
-
-    strcpy((*node)->ime, ime);
-
-    char index[8] = "";
-
-    for (int i = currentIndex; i < strlen(line) - 1; i++) {
-        if (line[i] == ' ' && line[i + 1] == '-') {
-            currentIndex = i + 3;
-            break;
-        }
-
-        char temp[2] = { line[i], '\0' };
-        strcat(index, temp);
-    }
-
-    strcpy((*node)->index, index);
-
-    char poeni[10] = "";
-
-    for (int i = currentIndex; i < strlen(line); i++) {
-        if (line[i] == '\n' || line[i] == EOF) {
-            break;
-        }
-
-        char temp[2] = { line[i], '\0' };
-        strcat(poeni, temp);
-    }
-
-    (*node)->poeni = atoi(poeni);
 }
 
 int LoadList(const char* firstFile, Node** head)
@@ -137,33 +123,37 @@ int LoadList(const char* firstFile, Node** head)
     }
 
     prev = *head;
-    char line[200];
-    char ime[30] = "";
 
-    while (fgets(line, sizeof(line), file) != NULL) {
-
-        if (*head == NULL)
-        {
-            *head = malloc(sizeof(Node));
+    //Ako je lista prazna
+    if (*head == NULL)
+    {
+       *head = malloc(sizeof(Node));
             
-            SetValues(head, line);
+       //Citam samo jedan red iz fajla, tj. prvi
+       fscanf(file, "%[^|]|%[^-]-%d", (*head)->ime, (*head)->index, &(*head)->poeni);
 
-            (*head)->next = NULL;
+       //Na prvoj kocki postavlja se pokazivac na sledecu da je NULL, jer nista nije jos ucitano za ostale
+       (*head)->next = NULL;
 
-            prev = *head;
+       //Postavljam prev na prvu kocku u listu sto je u ovom slucaju head cije su vrednosti setovane u fscanf
+       prev = *head;
             // free(*head);
-        }
-        else
-        {
-            curr = malloc(sizeof(Node));
+    }
 
-            SetValues(&curr, line);
 
-            prev->next = curr;
-            curr->next = NULL;
-            prev = curr;
-            // free(curr);
-        }
+    curr = malloc(sizeof(Node));
+
+    //U slucaju da head tj. lista nije prazna onda citamo sve ostale redove iz fajla
+    while (fscanf(file, "%*[\n]%[^|]|%[^-]-%d", curr->ime, curr->index, &curr->poeni) != EOF) 
+    {
+        //Na prev postavljamo pokazivac na curr tj. sledecu kocku(red) koju smo procitali iz fajla
+        prev->next = curr;
+        //Sad ta nova procitana kocka ne pokazuje ni na jednu sledecu dok se ne ucita
+        curr->next = NULL;
+        //Trenutnu kocku postavljamo na novu ucitanu
+        prev = curr;
+        //Alociramo novu memoriju za curr
+        curr = malloc(sizeof(Node));
     }
 
     fclose(file);
