@@ -5,11 +5,21 @@
 
 typedef struct {
     char ime[30];
-    char prezime[30];
-    char index[7];
+    char index[8];
     int poeni;
     struct Node* next;
 }Node;
+
+void FreeLinkedList(Node* head) {
+    Node* current = head;
+    Node* next;
+
+    while (current != NULL) {
+        next = current->next;
+        free(current);
+        current = next;
+    }
+}
 
 void WriteList(Node* list)
 {
@@ -20,7 +30,7 @@ void WriteList(Node* list)
 
     current = list;
     while (current != NULL) {
-        fprintf(file, "%s %s (%s)-%d\n", current->ime, current->prezime, current->index, current->poeni);
+        fprintf(file, "%s ( %s ) - %d\n", current->ime, current->index, current->poeni);
         current = current->next;
     }
     fclose(file);
@@ -70,6 +80,50 @@ void SortLinkedListByIndex(Node** head) {
     } while (swapped);
 }
 
+void SetValues(Node** node, char* line) {
+    char ime[31] = "";
+    int currentIndex = 0;
+
+    for (int i = 0; i < strlen(line); i++) {
+        if (line[i] == ' ' && line[i + 1] == '|') {
+            currentIndex = i + 3;
+            break;
+        }
+
+        char temp[2] = { line[i], '\0' };
+        strcat(ime, temp);
+    }
+
+    strcpy((*node)->ime, ime);
+
+    char index[8] = "";
+
+    for (int i = currentIndex; i < strlen(line) - 1; i++) {
+        if (line[i] == ' ' && line[i + 1] == '-') {
+            currentIndex = i + 3;
+            break;
+        }
+
+        char temp[2] = { line[i], '\0' };
+        strcat(index, temp);
+    }
+
+    strcpy((*node)->index, index);
+
+    char poeni[10] = "";
+
+    for (int i = currentIndex; i < strlen(line); i++) {
+        if (line[i] == '\n' || line[i] == EOF) {
+            break;
+        }
+
+        char temp[2] = { line[i], '\0' };
+        strcat(poeni, temp);
+    }
+
+    (*node)->poeni = atoi(poeni);
+}
+
 int LoadList(const char* firstFile, Node** head)
 {
     FILE* file;
@@ -83,22 +137,32 @@ int LoadList(const char* firstFile, Node** head)
     }
 
     prev = *head;
-    while (!feof(file)) {
+    char line[200];
+    char ime[30] = "";
+
+    while (fgets(line, sizeof(line), file) != NULL) {
 
         if (*head == NULL)
         {
             *head = malloc(sizeof(Node));
-            fscanf(file, "%s %s | %s %d", (*head)->ime, (*head)->prezime, (*head)->index, &(*head)->poeni);
+            
+            SetValues(head, line);
+
             (*head)->next = NULL;
+
             prev = *head;
+            // free(*head);
         }
         else
         {
             curr = malloc(sizeof(Node));
-            fscanf(file, "%s %s | %s %d", curr->ime, curr->prezime, curr->index, &curr->poeni);
+
+            SetValues(&curr, line);
+
             prev->next = curr;
             curr->next = NULL;
             prev = curr;
+            // free(curr);
         }
     }
 
@@ -132,13 +196,17 @@ void AddPointsAndConcat(Node** first, Node* second)
     current = second;
     while (current != NULL)
     {
-        if (!IsInList(*first, current))
+        if (!IsInList((*first), current))
         {
             temp = current->next;
             current->next = *first;
             *first = current;
         }
-        else temp = current->next;
+        else
+        {
+            temp = current->next;
+            free(current);
+        }
 
         current = temp;
     }
@@ -149,14 +217,11 @@ int main()
     FILE* prviFajl;
     FILE* drugiFajl;
 
-    char firstFile[50], secondFile[50];
+    char firstFile[31] = "dz1.txt", secondFile[31] = "dz2.txt";
     Node* firstList = NULL, * secondList = NULL;
 
-
-    printf("Unesi ime prve datoteke: ");
     scanf("%s", firstFile);
 
-    printf("Unesi ime druge datoteke: ");
     scanf("%s", secondFile);
 
     if (!LoadList(firstFile, &firstList))
@@ -175,4 +240,8 @@ int main()
     SortLinkedListByIndex(&firstList);
 
     WriteList(firstList);
+
+    FreeLinkedList(firstList);
+
+    return 0;
 }
