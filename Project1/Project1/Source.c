@@ -4,27 +4,32 @@
 #include <stdlib.h>
 
 typedef struct {
-	char ime[30];
-	char index[15];
 	int poeni;
 }Node;
 
+void printi(Node* str) {
+	printf("%d", str->poeni);
+}
+
+void setValue(Node** str, int points) {
+	str = malloc(sizeof(Node));
+	printf("%p posle dodele \n", *str);
+	(*str)->poeni = points;
+}
+
 int main()
 {
-	FILE* file;
-	file = fopen("test.txt", "r");
-	Node* osoba = malloc(sizeof(Node));
+	Node* a = NULL;
+	printf("%p pre funkcije\n", a);
+	setValue(&a, 10);
+	printf("%p posle funkcije\n", a);
+	printf("%d", a->poeni);
+}
 
-	if (file == NULL) {
-		printf("NE POSTOJI");
-		return 1;
-	}
-
-	char format[100] = "%[^|]|%[^-]-%d";
-
-	fscanf(file, format, osoba->ime, osoba->index, &osoba->poeni);
-
-	printf("%s\n", osoba->ime);
-	printf("%s\n", osoba->index);
-	printf("%d", osoba->poeni);
+void try() {
+	int x = 5;
+	int* c = &x;
+	printf("%d\n", &x);
+	printf("%d\n", &c);
+	printf("%d", c);
 }
